@@ -786,9 +786,15 @@ function showSection(sectionId) {
     const titles = {
         'desktop': 'Удаленный рабочий стол',
         'dashboard': 'Главная',
+        'clipboard': 'Буфер обмена',
+        'voice': 'Голосовое управление',
+        'ai': 'AI Ассистент',
+        'media': 'Медиа / Громкость',
         'system': 'Система',
         'applications': 'Приложения',
         'terminal': 'Терминал',
+        'keyboard': 'Горячие клавиши',
+        'browser': 'Браузер',
         'logs': 'Логи',
         'settings': 'Настройки'
     };
@@ -832,3 +838,414 @@ setInterval(() => {
         loadPCList();
     }
 }, 15000);
+
+// ========== CLIPBOARD SYNC FUNCTIONS ==========
+
+async function sendClipboardText() {
+    const text = document.getElementById('clipboard-text').value.trim();
+    if (!text) {
+        showNotification('Введите текст для отправки', 'error');
+        return;
+    }
+    
+    showNotification('Отправка текста...', 'info');
+    const data = await sendCommand('clipboard_set', { content: text, type: 'text' });
+    
+    if (data && data.status === 'success') {
+        showNotification('Текст отправлен в буфер обмена ПК', 'success');
+        document.getElementById('clipboard-text').value = '';
+    }
+}
+
+async function getClipboardText() {
+    showNotification('Получение текста из буфера...', 'info');
+    const data = await sendCommand('clipboard_get', { type: 'text' });
+    
+    if (data && data.status === 'success') {
+        const content = data.content || 'Буфер пуст';
+        document.getElementById('clipboard-content').innerHTML = `<pre>${escapeHtml(content)}</pre>`;
+        showNotification('Текст получен', 'success');
+    }
+}
+
+async function getClipboardImage() {
+    showNotification('Получение изображения...', 'info');
+    const data = await sendCommand('clipboard_get', { type: 'image' });
+    
+    if (data && data.status === 'success' && data.image) {
+        document.getElementById('clipboard-image').innerHTML = 
+            `<img src="data:image/png;base64,${data.image}" style="max-width: 100%; border-radius: 8px;">`;
+        showNotification('Изображение получено', 'success');
+    } else {
+        document.getElementById('clipboard-image').innerHTML = '<p>Нет изображения в буфере</p>';
+    }
+}
+
+async function sendClipboardImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+        const base64 = e.target.result.split(',')[1];
+        showNotification('Отправка изображения...', 'info');
+        
+        const data = await sendCommand('clipboard_set', { content: base64, type: 'image' });
+        
+        if (data && data.status === 'success') {
+            showNotification('Изображение отправлено в буфер ПК', 'success');
+        }
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
+}
+
+async function getClipboardHistory() {
+    const data = await sendCommand('clipboard_history', { limit: 20 });
+    
+    if (data && data.status === 'success' && data.history) {
+        const historyDiv = document.getElementById('clipboard-history');
+        historyDiv.innerHTML = data.history.map(item => `
+            <div class="log-entry">
+                <span class="log-timestamp">${new Date(item.timestamp).toLocaleString('ru-RU')}</span>
+                <span class="log-action">${item.type === 'image' ? '🖼️ Изображение' : '📝 Текст'}</span>
+                <br><small>${item.preview || ''}</small>
+            </div>
+        `).join('');
+    }
+}
+
+// ========== VOICE CONTROL FUNCTIONS ==========
+
+async function startVoice() {
+    const data = await sendCommand('voice_control', { action: 'start' });
+    
+    if (data && data.status === 'success') {
+        updateVoiceStatus(true);
+        showNotification('Голосовое управление включено', 'success');
+    }
+}
+
+async function stopVoice() {
+    const data = await sendCommand('voice_control', { action: 'stop' });
+    
+    if (data && data.status === 'success') {
+        updateVoiceStatus(false);
+        showNotification('Голосовое управление выключено', 'success');
+    }
+}
+
+async function toggleVoice() {
+    const data = await sendCommand('voice_control', { action: 'toggle' });
+    
+    if (data && data.status === 'success') {
+        updateVoiceStatus(data.enabled);
+        showNotification(`Голосовое управление ${data.enabled ? 'включено' : 'выключено'}`, 'success');
+    }
+}
+
+function updateVoiceStatus(enabled) {
+    const statusIcon = document.querySelector('#voice-status .status-icon');
+    const statusText = document.getElementById('voice-status-text');
+    
+    if (enabled) {
+        statusIcon.textContent = '🟢';
+        statusText.textContent = 'Голос активен';
+    } else {
+        statusIcon.textContent = '🔴';
+        statusText.textContent = 'Голос выключен';
+    }
+}
+
+async function speakText() {
+    const text = document.getElementById('tts-text').value.trim();
+    if (!text) {
+        showNotification('Введите текст для озвучки', 'error');
+        return;
+    }
+    
+    const data = await sendCommand('tts', { action: 'speak', text: text });
+    
+    if (data && data.status === 'success') {
+        showNotification('Текст озвучивается на ПК', 'success');
+    }
+}
+
+async function stopTTS() {
+    const data = await sendCommand('tts', { action: 'stop' });
+    
+    if (data && data.status === 'success') {
+        showNotification('Озвучка остановлена', 'success');
+    }
+}
+
+async function sendVoiceCommand() {
+    const command = document.getElementById('voice-command').value.trim();
+    if (!command) {
+        showNotification('Введите команду', 'error');
+        return;
+    }
+    
+    const data = await sendCommand('voice_command', { command: command });
+    
+    if (data && data.status === 'success') {
+        showNotification('Команда выполнена', 'success');
+        document.getElementById('voice-command').value = '';
+    }
+}
+
+// ========== AI ASSISTANT FUNCTIONS ==========
+
+async function askAI() {
+    const question = document.getElementById('ai-question').value.trim();
+    if (!question) {
+        showNotification('Введите вопрос', 'error');
+        return;
+    }
+    
+    document.getElementById('ai-response').innerHTML = '<div class="spinner"></div> AI думает...';
+    showNotification('Отправка запроса в AI...', 'info');
+    
+    const data = await sendCommand('openai_query', { question: question });
+    
+    if (data && data.status === 'success') {
+        document.getElementById('ai-response').innerHTML = `<p>${escapeHtml(data.answer)}</p>`;
+        showNotification('Ответ получен', 'success');
+    } else {
+        document.getElementById('ai-response').innerHTML = '<p>Ошибка получения ответа</p>';
+    }
+}
+
+async function askAIWithClipboard() {
+    const question = document.getElementById('ai-question').value.trim() || 'Проанализируй этот текст';
+    
+    document.getElementById('ai-response').innerHTML = '<div class="spinner"></div> AI думает...';
+    showNotification('Получение текста из буфера и отправка в AI...', 'info');
+    
+    const data = await sendCommand('openai_query', { question: question, use_clipboard: true });
+    
+    if (data && data.status === 'success') {
+        document.getElementById('ai-response').innerHTML = `<p>${escapeHtml(data.answer)}</p>`;
+        showNotification('Ответ получен', 'success');
+    } else {
+        document.getElementById('ai-response').innerHTML = '<p>Ошибка получения ответа</p>';
+    }
+}
+
+async function askAIVision() {
+    const question = document.getElementById('vision-question').value.trim() || 'Что изображено на картинке?';
+    
+    document.getElementById('vision-response').innerHTML = '<div class="spinner"></div> AI анализирует изображение...';
+    showNotification('Анализ изображения...', 'info');
+    
+    const data = await sendCommand('openai_vision', { question: question });
+    
+    if (data && data.status === 'success') {
+        document.getElementById('vision-response').innerHTML = `<p>${escapeHtml(data.answer)}</p>`;
+        showNotification('Анализ завершен', 'success');
+    } else {
+        document.getElementById('vision-response').innerHTML = '<p>Ошибка анализа изображения</p>';
+    }
+}
+
+async function translateText() {
+    const text = document.getElementById('translate-text').value.trim();
+    const lang = document.getElementById('translate-lang').value;
+    
+    if (!text) {
+        showNotification('Введите текст для перевода', 'error');
+        return;
+    }
+    
+    document.getElementById('translate-result').innerHTML = '<div class="spinner"></div> Перевод...';
+    
+    const data = await sendCommand('translate', { text: text, dest: lang });
+    
+    if (data && data.status === 'success') {
+        document.getElementById('translate-result').innerHTML = `<p><strong>Перевод:</strong><br>${escapeHtml(data.translation)}</p>`;
+        showNotification('Перевод выполнен', 'success');
+    } else {
+        document.getElementById('translate-result').innerHTML = '<p>Ошибка перевода</p>';
+    }
+}
+
+async function translateFromClipboard() {
+    const lang = document.getElementById('translate-lang').value;
+    
+    document.getElementById('translate-result').innerHTML = '<div class="spinner"></div> Получение и перевод...';
+    
+    const data = await sendCommand('translate', { use_clipboard: true, dest: lang });
+    
+    if (data && data.status === 'success') {
+        document.getElementById('translate-text').value = data.original || '';
+        document.getElementById('translate-result').innerHTML = `<p><strong>Перевод:</strong><br>${escapeHtml(data.translation)}</p>`;
+        showNotification('Перевод выполнен', 'success');
+    } else {
+        document.getElementById('translate-result').innerHTML = '<p>Ошибка перевода</p>';
+    }
+}
+
+// ========== MEDIA & VOLUME FUNCTIONS ==========
+
+async function volumeUp() {
+    const data = await sendCommand('volume', { action: 'up' });
+    if (data && data.status === 'success') {
+        showNotification('Громкость увеличена', 'success');
+    }
+}
+
+async function volumeDown() {
+    const data = await sendCommand('volume', { action: 'down' });
+    if (data && data.status === 'success') {
+        showNotification('Громкость уменьшена', 'success');
+    }
+}
+
+async function volumeMute() {
+    const data = await sendCommand('volume', { action: 'mute' });
+    if (data && data.status === 'success') {
+        showNotification('Звук переключен', 'success');
+    }
+}
+
+async function pressSpace() {
+    const data = await sendCommand('keyboard', { action: 'press', key: 'space' });
+    if (data && data.status === 'success') {
+        showNotification('Пробел нажат', 'success');
+    }
+}
+
+async function pressEnter() {
+    const data = await sendCommand('keyboard', { action: 'press', key: 'enter' });
+    if (data && data.status === 'success') {
+        showNotification('Enter нажат', 'success');
+    }
+}
+
+async function takeScreenshot() {
+    showNotification('Создание скриншота...', 'info');
+    const data = await sendCommand('screenshot', { return_image: true });
+    
+    if (data && data.status === 'success') {
+        if (data.image) {
+            document.getElementById('screenshot-preview').innerHTML = 
+                `<img src="data:image/png;base64,${data.image}" style="max-width: 100%; border-radius: 8px;">`;
+        }
+        showNotification('Скриншот создан', 'success');
+    }
+}
+
+async function getLastScreenshot() {
+    const data = await sendCommand('get_screenshot', {});
+    
+    if (data && data.status === 'success' && data.image) {
+        document.getElementById('screenshot-preview').innerHTML = 
+            `<img src="data:image/png;base64,${data.image}" style="max-width: 100%; border-radius: 8px;">`;
+        showNotification('Скриншот получен', 'success');
+    }
+}
+
+async function sleepPC() {
+    showConfirm(
+        'Спящий режим',
+        'Перевести ПК в спящий режим?',
+        async () => {
+            const data = await sendCommand('sleep', {});
+            if (data && data.status === 'success') {
+                showNotification('ПК переходит в спящий режим', 'success');
+            }
+        }
+    );
+}
+
+// ========== KEYBOARD SHORTCUTS FUNCTIONS ==========
+
+async function sendKeys(keys) {
+    // Разбиваем строку комбинации на массив клавиш
+    const keysArray = keys.split('+').map(k => k.trim());
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: keysArray });
+    if (data && data.status === 'success') {
+        showNotification(`Отправлено: ${keys}`, 'success');
+    }
+}
+
+async function winPlusDigit(digit) {
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: ['win', String(digit)] });
+    if (data && data.status === 'success') {
+        showNotification(`Win+${digit} выполнено`, 'success');
+    }
+}
+
+async function sendCustomKeys() {
+    const keys = document.getElementById('custom-keys').value.trim();
+    if (!keys) {
+        showNotification('Введите комбинацию клавиш', 'error');
+        return;
+    }
+    
+    const keysArray = keys.split('+').map(k => k.trim());
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: keysArray });
+    if (data && data.status === 'success') {
+        showNotification(`Отправлено: ${keys}`, 'success');
+        document.getElementById('custom-keys').value = '';
+    }
+}
+
+// ========== BROWSER CONTROL FUNCTIONS ==========
+
+async function newBrowserTab() {
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: ['ctrl', 't'] });
+    if (data && data.status === 'success') {
+        showNotification('Новая вкладка открыта', 'success');
+    }
+}
+
+async function closeBrowserTab() {
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: ['ctrl', 'w'] });
+    if (data && data.status === 'success') {
+        showNotification('Вкладка закрыта', 'success');
+    }
+}
+
+async function closeCurrentWindow() {
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: ['alt', 'f4'] });
+    if (data && data.status === 'success') {
+        showNotification('Окно закрыто', 'success');
+    }
+}
+
+async function openTabByNumber(num) {
+    const data = await sendCommand('keyboard', { action: 'hotkey', keys: ['ctrl', String(num)] });
+    if (data && data.status === 'success') {
+        showNotification(`Открыта вкладка ${num}`, 'success');
+    }
+}
+
+async function googleSearch() {
+    const query = document.getElementById('google-search').value.trim();
+    if (!query) {
+        showNotification('Введите поисковый запрос', 'error');
+        return;
+    }
+    
+    const data = await sendCommand('google_search', { query: query });
+    if (data && data.status === 'success') {
+        showNotification('Поиск выполнен', 'success');
+        document.getElementById('google-search').value = '';
+    }
+}
+
+async function openYoutube() {
+    const data = await sendCommand('open_youtube', {});
+    if (data && data.status === 'success') {
+        showNotification('YouTube открыт', 'success');
+    }
+}
+
+// ========== HELPER FUNCTIONS ==========
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}

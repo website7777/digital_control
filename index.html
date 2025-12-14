@@ -19,9 +19,15 @@
             <ul class="nav-menu">
                 <li><a href="#" class="nav-link active" data-section="desktop">🖥️ Удаленный Рабочий Стол</a></li>
                 <li><a href="#" class="nav-link" data-section="dashboard">🏠 Главная</a></li>
+                <li><a href="#" class="nav-link" data-section="clipboard">📋 Буфер обмена</a></li>
+                <li><a href="#" class="nav-link" data-section="voice">🎤 Голосовое управление</a></li>
+                <li><a href="#" class="nav-link" data-section="ai">🤖 AI Ассистент</a></li>
+                <li><a href="#" class="nav-link" data-section="media">🔊 Медиа/Громкость</a></li>
                 <li><a href="#" class="nav-link" data-section="system">⚙️ Система</a></li>
                 <li><a href="#" class="nav-link" data-section="applications">📱 Приложения</a></li>
                 <li><a href="#" class="nav-link" data-section="terminal">💻 Терминал</a></li>
+                <li><a href="#" class="nav-link" data-section="keyboard">⌨️ Горячие клавиши</a></li>
+                <li><a href="#" class="nav-link" data-section="browser">🌐 Браузер</a></li>
                 <li><a href="#" class="nav-link" data-section="logs">📋 Логи</a></li>
                 <li><a href="#" class="nav-link" data-section="settings">⚙️ Настройки</a></li>
             </ul>
@@ -97,6 +103,16 @@
                         </div>
 
                         <div class="card">
+                            <div class="card-icon">🔊</div>
+                            <h3>Громкость</h3>
+                            <div class="button-group">
+                                <button class="btn btn-primary" onclick="volumeUp()">🔊 Громче</button>
+                                <button class="btn btn-secondary" onclick="volumeDown()">🔉 Тише</button>
+                                <button class="btn btn-warning" onclick="volumeMute()">🔇 Мут</button>
+                            </div>
+                        </div>
+
+                        <div class="card">
                             <div class="card-icon">⏻️</div>
                             <h3>Управление ПК</h3>
                             <div class="button-group">
@@ -147,6 +163,278 @@
                             <button class="btn btn-warning" onclick="restartPC()">Перезагрузить через</button>
                             <button class="btn btn-danger" onclick="shutdownPC()">Выключить через</button>
                             <button class="btn btn-info" onclick="cancelShutdown()">Отменить</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Спящий режим</h3>
+                        <div class="button-group">
+                            <button class="btn btn-info" onclick="sleepPC()">💤 Спящий режим</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Clipboard Sync -->
+                <section id="clipboard" class="section">
+                    <div class="card">
+                        <h3>📋 Синхронизация буфера обмена</h3>
+                        <p class="info-text">Синхронизируйте текст и изображения между устройствами в реальном времени.</p>
+                        
+                        <div class="form-group">
+                            <label>Текст для отправки:</label>
+                            <textarea id="clipboard-text" rows="4" placeholder="Введите текст для отправки в буфер обмена ПК..."></textarea>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="sendClipboardText()">📤 Отправить текст</button>
+                            <button class="btn btn-secondary" onclick="getClipboardText()">📥 Получить текст</button>
+                        </div>
+                        
+                        <div id="clipboard-content" class="card-content" style="margin-top: 15px;">
+                            <p>Содержимое буфера обмена будет отображено здесь...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🖼️ Изображения</h3>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="getClipboardImage()">📥 Получить изображение</button>
+                            <input type="file" id="image-upload" accept="image/*" style="display:none" onchange="sendClipboardImage(this)">
+                            <button class="btn btn-secondary" onclick="document.getElementById('image-upload').click()">📤 Отправить изображение</button>
+                        </div>
+                        <div id="clipboard-image" class="card-content" style="margin-top: 15px;">
+                            <p>Изображение из буфера обмена будет отображено здесь...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>📜 История синхронизации</h3>
+                        <button class="btn btn-secondary" onclick="getClipboardHistory()">Обновить историю</button>
+                        <div id="clipboard-history" class="card-content logs-list" style="margin-top: 15px;"></div>
+                    </div>
+                </section>
+
+                <!-- Voice Control -->
+                <section id="voice" class="section">
+                    <div class="card">
+                        <h3>🎤 Голосовое управление</h3>
+                        <p class="info-text">Управляйте голосовым ассистентом на ПК.</p>
+                        
+                        <div class="voice-status" id="voice-status">
+                            <span class="status-icon">⚪</span>
+                            <span id="voice-status-text">Статус неизвестен</span>
+                        </div>
+                        
+                        <div class="button-group" style="margin-top: 15px;">
+                            <button class="btn btn-success" onclick="startVoice()">🎤 Включить голос</button>
+                            <button class="btn btn-danger" onclick="stopVoice()">🔇 Выключить голос</button>
+                            <button class="btn btn-secondary" onclick="toggleVoice()">🔄 Переключить</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🗣️ Озвучка текста (TTS)</h3>
+                        <div class="form-group">
+                            <label>Текст для озвучки:</label>
+                            <textarea id="tts-text" rows="3" placeholder="Введите текст, который нужно озвучить на ПК..."></textarea>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="speakText()">🔊 Озвучить</button>
+                            <button class="btn btn-danger" onclick="stopTTS()">⏹️ Остановить</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>📝 Отправить команду голосом</h3>
+                        <div class="form-group">
+                            <label>Команда (как если бы вы сказали ассистенту):</label>
+                            <input type="text" id="voice-command" placeholder="Например: открой youtube, найди погода">
+                        </div>
+                        <button class="btn btn-primary" onclick="sendVoiceCommand()">📤 Отправить команду</button>
+                    </div>
+                </section>
+
+                <!-- AI Assistant -->
+                <section id="ai" class="section">
+                    <div class="card">
+                        <h3>🤖 AI Ассистент (OpenAI)</h3>
+                        <p class="info-text">Задавайте вопросы AI и получайте ответы с озвучкой на ПК.</p>
+                        
+                        <div class="form-group">
+                            <label>Ваш вопрос:</label>
+                            <textarea id="ai-question" rows="4" placeholder="Введите вопрос для OpenAI..."></textarea>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="askAI()">🧠 Спросить AI</button>
+                            <button class="btn btn-secondary" onclick="askAIWithClipboard()">📋 Спросить с текстом из буфера</button>
+                        </div>
+                        
+                        <div id="ai-response" class="card-content" style="margin-top: 15px; background: var(--light-bg); padding: 15px; border-radius: 8px;">
+                            <p>Ответ AI будет отображен здесь...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🖼️ AI Vision (распознавание изображений)</h3>
+                        <p class="info-text">Отправьте изображение из буфера обмена ПК для анализа.</p>
+                        
+                        <div class="form-group">
+                            <label>Вопрос к изображению:</label>
+                            <input type="text" id="vision-question" placeholder="Что изображено на картинке?">
+                        </div>
+                        <button class="btn btn-primary" onclick="askAIVision()">👁️ Анализ изображения</button>
+                        
+                        <div id="vision-response" class="card-content" style="margin-top: 15px;">
+                            <p>Результат анализа будет отображен здесь...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🌐 Переводчик</h3>
+                        <div class="form-group">
+                            <label>Текст для перевода:</label>
+                            <textarea id="translate-text" rows="3" placeholder="Введите текст или нажмите 'Из буфера'"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Язык перевода:</label>
+                            <select id="translate-lang">
+                                <option value="ru">Русский</option>
+                                <option value="en">English</option>
+                                <option value="de">Deutsch</option>
+                                <option value="fr">Français</option>
+                                <option value="es">Español</option>
+                                <option value="zh">中文</option>
+                                <option value="ja">日本語</option>
+                            </select>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="translateText()">🌐 Перевести</button>
+                            <button class="btn btn-secondary" onclick="translateFromClipboard()">📋 Из буфера</button>
+                        </div>
+                        <div id="translate-result" class="card-content" style="margin-top: 15px;"></div>
+                    </div>
+                </section>
+
+                <!-- Media & Volume -->
+                <section id="media" class="section">
+                    <div class="card">
+                        <h3>🔊 Управление громкостью</h3>
+                        <div class="volume-controls">
+                            <div class="button-group vertical">
+                                <button class="btn btn-primary btn-large" onclick="volumeUp()">🔊 Громче</button>
+                                <button class="btn btn-secondary btn-large" onclick="volumeDown()">🔉 Тише</button>
+                                <button class="btn btn-warning btn-large" onclick="volumeMute()">🔇 Вкл/Выкл звук</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>⏯️ Медиа управление</h3>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="pressSpace()">⏸️ Пауза/Play</button>
+                            <button class="btn btn-secondary" onclick="pressEnter()">↵ Enter</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>📸 Скриншот</h3>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="takeScreenshot()">📷 Сделать скриншот</button>
+                            <button class="btn btn-secondary" onclick="getLastScreenshot()">🖼️ Получить последний</button>
+                        </div>
+                        <div id="screenshot-preview" class="card-content" style="margin-top: 15px;">
+                            <p>Превью скриншота...</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Keyboard Shortcuts -->
+                <section id="keyboard" class="section">
+                    <div class="card">
+                        <h3>⌨️ Горячие клавиши</h3>
+                        <p class="info-text">Отправляйте комбинации клавиш на ПК.</p>
+                        
+                        <div class="hotkey-grid">
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+c')">Ctrl+C</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+v')">Ctrl+V</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+x')">Ctrl+X</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+z')">Ctrl+Z</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+a')">Ctrl+A</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+s')">Ctrl+S</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+f')">Ctrl+F</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('ctrl+shift+esc')">Диспетчер задач</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('alt+f4')">Alt+F4</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('alt+tab')">Alt+Tab</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('win+d')">Win+D</button>
+                            <button class="btn btn-secondary" onclick="sendKeys('win+e')">Win+E</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔢 Win + Цифра (Панель задач)</h3>
+                        <p class="info-text">Открыть приложение на панели задач по номеру.</p>
+                        <div class="taskbar-grid">
+                            <button class="btn btn-primary" onclick="winPlusDigit(1)">1</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(2)">2</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(3)">3</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(4)">4</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(5)">5</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(6)">6</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(7)">7</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(8)">8</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(9)">9</button>
+                            <button class="btn btn-primary" onclick="winPlusDigit(0)">10</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🎹 Произвольная комбинация</h3>
+                        <div class="form-group">
+                            <label>Комбинация клавиш:</label>
+                            <input type="text" id="custom-keys" placeholder="Например: ctrl+shift+n">
+                        </div>
+                        <button class="btn btn-primary" onclick="sendCustomKeys()">Отправить</button>
+                    </div>
+                </section>
+
+                <!-- Browser Control -->
+                <section id="browser" class="section">
+                    <div class="card">
+                        <h3>🌐 Управление браузером</h3>
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="newBrowserTab()">➕ Новая вкладка</button>
+                            <button class="btn btn-danger" onclick="closeBrowserTab()">✖️ Закрыть вкладку</button>
+                            <button class="btn btn-secondary" onclick="closeCurrentWindow()">🗙 Закрыть окно</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔢 Вкладки по номеру (Ctrl+1-9)</h3>
+                        <div class="taskbar-grid">
+                            <button class="btn btn-secondary" onclick="openTabByNumber(1)">1</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(2)">2</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(3)">3</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(4)">4</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(5)">5</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(6)">6</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(7)">7</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(8)">8</button>
+                            <button class="btn btn-secondary" onclick="openTabByNumber(9)">9</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>🔍 Поиск в Google</h3>
+                        <div class="form-group">
+                            <label>Поисковый запрос:</label>
+                            <input type="text" id="google-search" placeholder="Введите запрос...">
+                        </div>
+                        <button class="btn btn-primary" onclick="googleSearch()">🔍 Найти в Google</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>▶️ YouTube</h3>
+                        <div class="button-group">
+                            <button class="btn btn-danger" onclick="openYoutube()">▶️ Открыть YouTube</button>
                         </div>
                     </div>
                 </section>
