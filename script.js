@@ -12,6 +12,11 @@ let config = {
 let confirmCallback = null;
 let pcList = [];
 
+// Нормализация URL (убираем trailing slash)
+function normalizeUrl(url) {
+    return url.replace(/\/+$/, '');
+}
+
 // ========== ИНИЦИАЛИЗАЦИЯ ==========
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -120,8 +125,11 @@ async function handleLogin(e) {
     
     showNotification('Вход...', 'info');
     
+    // Нормализуем URL
+    const normalizedUrl = normalizeUrl(serverUrl);
+    
     try {
-        const response = await fetch(`${serverUrl}/auth`, {
+        const response = await fetch(`${normalizedUrl}/auth`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -130,11 +138,11 @@ async function handleLogin(e) {
         const data = await response.json();
         
         if (data.success) {
-            config.serverUrl = serverUrl;
+            config.serverUrl = normalizedUrl;
             config.token = data.token;
             config.username = data.username;
             
-            localStorage.setItem('serverUrl', serverUrl);
+            localStorage.setItem('serverUrl', normalizedUrl);
             localStorage.setItem('token', data.token);
             localStorage.setItem('username', data.username);
             
@@ -170,8 +178,11 @@ async function handleRegister(e) {
     
     showNotification('Регистрация...', 'info');
     
+    // Нормализуем URL
+    const normalizedUrl = normalizeUrl(serverUrl);
+    
     try {
-        const response = await fetch(`${serverUrl}/register`, {
+        const response = await fetch(`${normalizedUrl}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -180,11 +191,11 @@ async function handleRegister(e) {
         const data = await response.json();
         
         if (data.success) {
-            config.serverUrl = serverUrl;
+            config.serverUrl = normalizedUrl;
             config.token = data.token;
             config.username = data.username;
             
-            localStorage.setItem('serverUrl', serverUrl);
+            localStorage.setItem('serverUrl', normalizedUrl);
             localStorage.setItem('token', data.token);
             localStorage.setItem('username', data.username);
             
