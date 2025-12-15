@@ -92,8 +92,9 @@ function setupEventListeners() {
     canvas.addEventListener('click', handleCanvasClick);
     canvas.addEventListener('contextmenu', handleCanvasRightClick);
     canvas.addEventListener('wheel', handleCanvasScroll);
-    canvas.addEventListener('touchstart', handleTouchStart);
-    canvas.addEventListener('touchend', handleTouchEnd);
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     
     // Keyboard events
     document.addEventListener('keydown', handleKeyDown);
@@ -794,26 +795,66 @@ function handleCanvasScroll(event) {
 
 function handleTouchStart(event) {
     event.preventDefault();
-    if (!isStreaming) return;
+    if (!isStreaming && !screenCanvas) return;
     
     touchStartTime = Date.now();
     const touch = event.touches[0];
     const rect = screenCanvas.getBoundingClientRect();
-    touchStartPos.x = (touch.clientX - rect.left) / rect.width;
-    touchStartPos.y = (touch.clientY - rect.top) / rect.height;
+    touchStartPos.x = touch.clientX;
+    touchStartPos.y = touch.clientY;
+    touchStartPos.relX = (touch.clientX - rect.left) / rect.width;
+    touchStartPos.relY = (touch.clientY - rect.top) / rect.height;
+    touchStartPos.lastY = touch.clientY;
+    touchStartPos.isScrolling = false;
+}
+
+// Обработка свайпа для прокрутки
+let scrollAccumulator = 0;
+const SCROLL_THRESHOLD = 30; // Минимальное расстояние для прокрутки
+
+function handleTouchMove(event) {
+    event.preventDefault();
+    if (!isStreaming && !screenCanvas) return;
+    
+    const touch = event.touches[0];
+    const deltaY = touchStartPos.lastY - touch.clientY;
+    
+    // Накапливаем движение
+    scrollAccumulator += deltaY;
+    
+    // Если накопили достаточно - отправляем команду прокрутки
+    if (Math.abs(scrollAccumulator) >= SCROLL_THRESHOLD) {
+        const scrollAmount = scrollAccumulator > 0 ? -3 : 3; // Инвертируем для естественной прокрутки
+        sendCommand('mouse', { action: 'scroll', amount: scrollAmount });
+        scrollAccumulator = 0;
+        touchStartPos.isScrolling = true;
+    }
+    
+    touchStartPos.lastY = touch.clientY;
 }
 
 function handleTouchEnd(event) {
     event.preventDefault();
-    if (!isStreaming) return;
+    if (!isStreaming && !screenCanvas) return;
     
     const touchDuration = Date.now() - touchStartTime;
     
-    if (touchDuration < 300) {
-        sendCommand('mouse', { action: 'click', x: touchStartPos.x, y: touchStartPos.y });
-    } else if (touchDuration > 800) {
-        sendCommand('mouse', { action: 'right_click', x: touchStartPos.x, y: touchStartPos.y });
+    // Если был свайп - не делаем клик
+    if (touchStartPos.isScrolling) {
+        scrollAccumulator = 0;
+        return;
     }
+    
+    // Короткое нажатие - клик
+    if (touchDuration < 300) {
+        sendCommand('mouse', { action: 'click', x: touchStartPos.relX, y: touchStartPos.relY });
+    } 
+    // Длинное нажатие - правый клик
+    else if (touchDuration > 800) {
+        sendCommand('mouse', { action: 'right_click', x: touchStartPos.relX, y: touchStartPos.relY });
+    }
+    
+    scrollAccumulator = 0;
 }
 
 function handleKeyDown(event) {
