@@ -56,23 +56,24 @@
                 <section id="desktop" class="section active">
                     <div class="desktop-container">
                         <div class="desktop-controls">
-                            <button id="start-stream" class="btn btn-primary">▶️ Начать трансляцию</button>
+                            <button id="snapshot-btn" class="btn btn-success">📷 Снимок</button>
+                            <button id="start-stream" class="btn btn-primary">▶️ Трансляция</button>
                             <button id="stop-stream" class="btn btn-danger" style="display:none;">⏹️ Остановить</button>
                             <label>
                                 Качество: 
                                 <select id="quality-select">
-                                    <option value="30">Низкое (быстрее)</option>
-                                    <option value="50" selected>Среднее</option>
-                                    <option value="80">Высокое</option>
+                                    <option value="15" selected>Низкое (облако)</option>
+                                    <option value="30">Среднее</option>
+                                    <option value="50">Высокое</option>
                                 </select>
                             </label>
                             <label>
-                                FPS: 
+                                Интервал: 
                                 <select id="fps-select">
-                                    <option value="5">5 FPS</option>
-                                    <option value="10" selected>10 FPS</option>
-                                    <option value="15">15 FPS</option>
-                                    <option value="20">20 FPS</option>
+                                    <option value="5">5 сек</option>
+                                    <option value="3" selected>3 сек</option>
+                                    <option value="2">2 сек</option>
+                                    <option value="1">1 сек</option>
                                 </select>
                             </label>
                             <span id="stream-status" class="stream-status"></span>

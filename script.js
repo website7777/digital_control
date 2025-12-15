@@ -69,9 +69,23 @@ function setupEventListeners() {
     // Remote Desktop buttons
     const startBtn = document.getElementById('start-stream');
     const stopBtn = document.getElementById('stop-stream');
+    const snapshotBtn = document.getElementById('snapshot-btn');
     
     if (startBtn) startBtn.addEventListener('click', startScreenStream);
     if (stopBtn) stopBtn.addEventListener('click', stopScreenStream);
+    if (snapshotBtn) snapshotBtn.addEventListener('click', takeSnapshot);
+    
+    // Интервал стриминга
+    const fpsSelect = document.getElementById('fps-select');
+    if (fpsSelect) {
+        fpsSelect.addEventListener('change', (e) => {
+            const interval = parseInt(e.target.value) * 1000;
+            if (streamInterval) {
+                clearInterval(streamInterval);
+                streamInterval = setInterval(updateScreen, interval);
+            }
+        });
+    }
     
     // Canvas events
     const canvas = document.getElementById('screen-canvas');
@@ -613,10 +627,66 @@ async function startScreenStream() {
     document.getElementById('stop-stream').style.display = 'inline-block';
     document.getElementById('screen-loading').style.display = 'none';
     
-    updateStreamStatus('Транслируется');
+    updateStreamStatus('Транслируется (облачный режим)');
     
-    // Запускаем получение экрана
-    streamInterval = setInterval(updateScreen, 500);
+    // Получаем интервал из селектора
+    const fpsSelect = document.getElementById('fps-select');
+    const interval = fpsSelect ? parseInt(fpsSelect.value) * 1000 : 3000;
+    
+    // Запускаем получение экрана с выбранным интервалом
+    streamInterval = setInterval(updateScreen, interval);
+    
+    // Первый кадр сразу
+    updateScreen();
+}
+
+// Одиночный снимок экрана (быстрее чем стриминг)
+async function takeSnapshot() {
+    if (!config.selectedPcId) {
+        showNotification('Выберите ПК', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('snapshot-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Загрузка...';
+    
+    try {
+        // Инициализация canvas если нужно
+        if (!screenCanvas) {
+            screenCanvas = document.getElementById('screen-canvas');
+            screenCtx = screenCanvas.getContext('2d');
+        }
+        
+        document.getElementById('screen-loading').style.display = 'none';
+        
+        const response = await fetch(
+            `${config.serverUrl}/pc/screen?token=${config.token}&pc_id=${config.selectedPcId}`,
+            { timeout: 15000 }
+        );
+        const data = await response.json();
+        
+        if (data.success && data.image) {
+            const img = new Image();
+            img.onload = () => {
+                screenCanvas.width = img.width;
+                screenCanvas.height = img.height;
+                screenCtx.drawImage(img, 0, 0);
+                updateStreamStatus('Снимок получен');
+            };
+            img.src = 'data:image/jpeg;base64,' + data.image;
+            showNotification('Снимок получен', 'success');
+        } else {
+            showNotification('Нет изображения', 'error');
+            document.getElementById('screen-loading').style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Snapshot error:', error);
+        showNotification('Ошибка получения снимка', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '📷 Снимок';
+    }
 }
 
 async function stopScreenStream() {
