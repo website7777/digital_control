@@ -340,6 +340,9 @@ async function loadPCList() {
                 if (pc) {
                     document.getElementById('pc-selector').value = config.selectedPcId;
                     updateConnectionStatus(pc.status === 'online');
+                    // Загружаем мониторы для восстановленного ПК
+                    console.log('ПК восстановлен из localStorage, загружаю мониторы...');
+                    setTimeout(() => loadMonitors(), 1500);
                 }
             }
         }
