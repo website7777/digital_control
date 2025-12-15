@@ -394,8 +394,11 @@ function handlePCSelect(e) {
         if (pc) {
             updateConnectionStatus(pc.status === 'online');
             showNotification(`Выбран ПК: ${pc.pc_name}`, 'success');
-            // Загружаем список мониторов
-            loadMonitors();
+            // Загружаем список мониторов (через 1 сек после выбора ПК)
+            setTimeout(() => {
+                console.log('Запускаю загрузку мониторов для ПК:', pcId);
+                loadMonitors();
+            }, 1000);
         }
     } else {
         updateConnectionStatus(false);
@@ -412,31 +415,75 @@ function handlePCSelect(e) {
 let selectedMonitor = 1;
 
 async function loadMonitors() {
-    if (!config.selectedPcId) return;
+    if (!config.selectedPcId || !config.token) return;
+    
+    console.log('Загрузка списка мониторов...');
     
     try {
-        const result = await sendCommand('get_monitors');
-        if (result && result.status === 'success' && result.monitors) {
-            const selector = document.getElementById('monitor-selector');
-            selector.innerHTML = '';
-            
-            result.monitors.forEach((mon, index) => {
-                const option = document.createElement('option');
-                option.value = mon.id;
-                option.textContent = `🖥️ ${index + 1} (${mon.width}x${mon.height})`;
-                selector.appendChild(option);
-            });
-            
-            // Показываем селектор если больше 1 монитора
-            if (result.monitors.length > 1) {
-                selector.style.display = 'inline-block';
-            } else {
-                selector.style.display = 'none';
-            }
-            
-            // Устанавливаем выбранный монитор
-            selectedMonitor = parseInt(selector.value) || 1;
+        // Отправляем команду
+        const response = await fetch(`${config.serverUrl}/pc/command`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token: config.token,
+                pc_id: config.selectedPcId,
+                command_type: 'get_monitors',
+                command_data: {}
+            })
+        });
+        
+        const cmdData = await response.json();
+        if (!cmdData.success) {
+            console.log('Ошибка отправки команды get_monitors');
+            return;
         }
+        
+        // Ждём результат (но быстрее чем обычно)
+        const commandId = cmdData.command_id;
+        for (let i = 0; i < 10; i++) {
+            await new Promise(r => setTimeout(r, 500));
+            
+            try {
+                const resultResp = await fetch(
+                    `${config.serverUrl}/pc/result?token=${config.token}&pc_id=${config.selectedPcId}&command_id=${commandId}`
+                );
+                const resultData = await resultResp.json();
+                
+                if (resultData.success && resultData.data && resultData.data.result) {
+                    const result = resultData.data.result;
+                    
+                    if (result.status === 'success' && result.monitors) {
+                        const selector = document.getElementById('monitor-selector');
+                        selector.innerHTML = '';
+                        
+                        result.monitors.forEach((mon, index) => {
+                            const option = document.createElement('option');
+                            option.value = mon.id;
+                            option.textContent = `🖥️ ${index + 1} (${mon.width}x${mon.height})`;
+                            selector.appendChild(option);
+                        });
+                        
+                        console.log(`Найдено мониторов: ${result.monitors.length}`);
+                        
+                        // Показываем селектор если больше 1 монитора
+                        if (result.monitors.length > 1) {
+                            selector.style.display = 'inline-block';
+                            showNotification(`Найдено ${result.monitors.length} монитора`, 'success');
+                        } else {
+                            selector.style.display = 'none';
+                        }
+                        
+                        // Устанавливаем выбранный монитор
+                        selectedMonitor = parseInt(selector.value) || 1;
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.log('Ожидание результата...', err);
+            }
+        }
+        
+        console.log('Таймаут загрузки мониторов');
     } catch (error) {
         console.log('Не удалось загрузить мониторы:', error);
     }
@@ -446,8 +493,21 @@ function handleMonitorSelect(e) {
     selectedMonitor = parseInt(e.target.value) || 1;
     localStorage.setItem('selectedMonitor', selectedMonitor);
     
-    // Отправляем команду на смену монитора
-    sendCommand('set_monitor', { monitor_id: selectedMonitor });
+    // Отправляем команду на смену монитора (без ожидания результата)
+    fetch(`${config.serverUrl}/pc/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            token: config.token,
+            pc_id: config.selectedPcId,
+            command_type: 'set_monitor',
+            command_data: { monitor_id: selectedMonitor }
+        })
+    }).then(() => {
+        console.log(`Монитор переключен на ${selectedMonitor}`);
+    }).catch(err => {
+        console.log('Ошибка переключения монитора:', err);
+    });
     
     showNotification(`Выбран монитор ${selectedMonitor}`, 'success');
 }
