@@ -105,6 +105,8 @@ function setupEventListeners() {
 
 // ========== СТРЕЛКИ ПРОКРУТКИ ==========
 
+let scrollRepeatInterval = null;
+
 function setupScrollArrows() {
     // Увеличенные значения прокрутки (как 3 оборота колёсика)
     const arrows = {
@@ -118,25 +120,48 @@ function setupScrollArrows() {
         const btn = document.getElementById(id);
         if (!btn) return;
         
-        let handled = false;
+        let isHolding = false;
         
-        // Touch - приоритет на мобильных
-        btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            if (!config.selectedPcId) return;
-            handled = true;
+        // Начать прокрутку
+        const startScroll = () => {
+            if (!config.selectedPcId || isHolding) return;
+            isHolding = true;
+            
+            // Первая прокрутка сразу
             sendCommand('mouse', data);
-            // Сбросить флаг через небольшую задержку
-            setTimeout(() => { handled = false; }, 300);
-        });
+            
+            // При зажатии - повторять каждые 600ms (безопасный интервал для сервера)
+            scrollRepeatInterval = setInterval(() => {
+                if (isHolding) {
+                    sendCommand('mouse', data);
+                }
+            }, 600);
+        };
         
-        // Click - только если не было touch
-        btn.addEventListener('click', (e) => {
+        // Остановить прокрутку
+        const stopScroll = () => {
+            isHolding = false;
+            if (scrollRepeatInterval) {
+                clearInterval(scrollRepeatInterval);
+                scrollRepeatInterval = null;
+            }
+        };
+        
+        // Touch events (мобильные)
+        btn.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (handled) return; // Уже обработано touch
-            if (!config.selectedPcId) return;
-            sendCommand('mouse', data);
+            startScroll();
         });
+        btn.addEventListener('touchend', stopScroll);
+        btn.addEventListener('touchcancel', stopScroll);
+        
+        // Mouse events (десктоп)
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startScroll();
+        });
+        btn.addEventListener('mouseup', stopScroll);
+        btn.addEventListener('mouseleave', stopScroll);
     });
 }
 
