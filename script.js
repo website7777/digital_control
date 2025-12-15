@@ -105,9 +105,6 @@ function setupEventListeners() {
 
 // ========== СТРЕЛКИ ПРОКРУТКИ ==========
 
-let scrollIntervalId = null;
-let isScrolling = false;
-
 function setupScrollArrows() {
     // Увеличенные значения прокрутки (как 3 оборота колёсика)
     const arrows = {
@@ -121,9 +118,22 @@ function setupScrollArrows() {
         const btn = document.getElementById(id);
         if (!btn) return;
         
-        // Одиночный клик - одна прокрутка
+        let handled = false;
+        
+        // Touch - приоритет на мобильных
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (!config.selectedPcId) return;
+            handled = true;
+            sendCommand('mouse', data);
+            // Сбросить флаг через небольшую задержку
+            setTimeout(() => { handled = false; }, 300);
+        });
+        
+        // Click - только если не было touch
         btn.addEventListener('click', (e) => {
             e.preventDefault();
+            if (handled) return; // Уже обработано touch
             if (!config.selectedPcId) return;
             sendCommand('mouse', data);
         });
@@ -382,10 +392,24 @@ function updateConnectionStatus(online) {
 
 // ========== API КОМАНДЫ ==========
 
+// Глобальный throttle для mouse команд
+let lastMouseCommandTime = 0;
+const MOUSE_COMMAND_THROTTLE = 500; // Минимум 500ms между командами мыши
+
 async function sendCommand(commandType, commandData = {}) {
     if (!config.token || !config.selectedPcId) {
         showNotification('Выберите ПК для управления', 'error');
         return null;
+    }
+    
+    // Throttle для mouse команд (scroll, click)
+    if (commandType === 'mouse') {
+        const now = Date.now();
+        if (now - lastMouseCommandTime < MOUSE_COMMAND_THROTTLE) {
+            console.log('Mouse command throttled');
+            return null;
+        }
+        lastMouseCommandTime = now;
     }
     
     try {
@@ -410,7 +434,7 @@ async function sendCommand(commandType, commandData = {}) {
             return null;
         }
     } catch (error) {
-        showNotification(`Ошибка: ${error.message}`, 'error');
+        console.log(`Ошибка сети: ${error.message}`);
         return null;
     }
 }
