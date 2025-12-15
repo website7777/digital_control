@@ -11,6 +11,7 @@ let config = {
 
 let confirmCallback = null;
 let pcList = [];
+let monitorsLoaded = false;  // Флаг чтобы не загружать мониторы повторно
 
 // Нормализация URL (убираем trailing slash)
 function normalizeUrl(url) {
@@ -334,14 +335,15 @@ async function loadPCList() {
             updatePCSelector();
             updatePCListView();
             
-            // Восстанавливаем выбранный ПК
-            if (config.selectedPcId) {
+            // Восстанавливаем выбранный ПК (только при первой загрузке)
+            if (config.selectedPcId && !monitorsLoaded) {
                 const pc = pcList.find(p => p.pc_id === config.selectedPcId);
                 if (pc) {
                     document.getElementById('pc-selector').value = config.selectedPcId;
                     updateConnectionStatus(pc.status === 'online');
-                    // Загружаем мониторы для восстановленного ПК
+                    // Загружаем мониторы только один раз
                     console.log('ПК восстановлен из localStorage, загружаю мониторы...');
+                    monitorsLoaded = true;
                     setTimeout(() => loadMonitors(), 1500);
                 }
             }
@@ -392,12 +394,16 @@ function handlePCSelect(e) {
     config.selectedPcId = pcId;
     localStorage.setItem('selectedPcId', pcId);
     
+    // Сбрасываем флаг мониторов при смене ПК
+    monitorsLoaded = false;
+    
     if (pcId) {
         const pc = pcList.find(p => p.pc_id === pcId);
         if (pc) {
             updateConnectionStatus(pc.status === 'online');
             showNotification(`Выбран ПК: ${pc.pc_name}`, 'success');
             // Загружаем список мониторов (через 1 сек после выбора ПК)
+            monitorsLoaded = true;
             setTimeout(() => {
                 console.log('Запускаю загрузку мониторов для ПК:', pcId);
                 loadMonitors();
