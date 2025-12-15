@@ -87,6 +87,9 @@ function setupEventListeners() {
         });
     }
     
+    // Стрелки прокрутки
+    setupScrollArrows();
+    
     // Canvas events
     const canvas = document.getElementById('screen-canvas');
     canvas.addEventListener('click', handleCanvasClick);
@@ -98,6 +101,58 @@ function setupEventListeners() {
     
     // Keyboard events
     document.addEventListener('keydown', handleKeyDown);
+}
+
+// ========== СТРЕЛКИ ПРОКРУТКИ ==========
+
+let scrollIntervalId = null;
+
+function setupScrollArrows() {
+    const arrows = {
+        'scroll-up': { action: 'scroll', amount: 5 },
+        'scroll-down': { action: 'scroll', amount: -5 },
+        'scroll-left': { action: 'scroll_horizontal', amount: 5 },
+        'scroll-right': { action: 'scroll_horizontal', amount: -5 }
+    };
+    
+    Object.entries(arrows).forEach(([id, data]) => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        
+        // Начать прокрутку при нажатии
+        const startScroll = () => {
+            if (!isStreaming && !screenCanvas) return;
+            
+            // Сразу отправляем первую команду
+            sendCommand('mouse', data);
+            
+            // Потом повторяем каждые 100ms пока зажато
+            scrollIntervalId = setInterval(() => {
+                sendCommand('mouse', data);
+            }, 100);
+        };
+        
+        // Остановить при отпускании
+        const stopScroll = () => {
+            if (scrollIntervalId) {
+                clearInterval(scrollIntervalId);
+                scrollIntervalId = null;
+            }
+        };
+        
+        // Mouse events
+        btn.addEventListener('mousedown', startScroll);
+        btn.addEventListener('mouseup', stopScroll);
+        btn.addEventListener('mouseleave', stopScroll);
+        
+        // Touch events
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startScroll();
+        });
+        btn.addEventListener('touchend', stopScroll);
+        btn.addEventListener('touchcancel', stopScroll);
+    });
 }
 
 // ========== АВТОРИЗАЦИЯ ==========

@@ -593,14 +593,59 @@ body {
     margin-left: auto;
 }
 
-.desktop-screen {
+/* Wrapper для экрана со стрелками */
+.desktop-screen-wrapper {
+    display: grid;
+    grid-template-areas:
+        ". up ."
+        "left screen right"
+        ". down .";
+    grid-template-columns: 40px 1fr 40px;
+    grid-template-rows: 40px 1fr 40px;
+    gap: 5px;
     flex: 1;
+    min-height: 400px;
+}
+
+/* Стрелки прокрутки */
+.scroll-arrow {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.scroll-arrow:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.scroll-arrow:active {
+    transform: scale(0.95);
+    background: var(--secondary);
+}
+
+.scroll-up { grid-area: up; }
+.scroll-down { grid-area: down; }
+.scroll-left { grid-area: left; }
+.scroll-right { grid-area: right; }
+
+.desktop-screen {
+    grid-area: screen;
     background: #000;
     border-radius: 10px;
     overflow: hidden;
     position: relative;
     box-shadow: var(--shadow-lg);
-    min-height: 400px;
 }
 
 #screen-canvas {

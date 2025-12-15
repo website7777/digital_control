@@ -78,12 +78,19 @@
                             </label>
                             <span id="stream-status" class="stream-status"></span>
                         </div>
-                        <div class="desktop-screen">
-                            <canvas id="screen-canvas"></canvas>
-                            <div id="screen-loading" class="screen-loading">
-                                <div class="spinner"></div>
-                                <p>Ожидание подключения...</p>
+                        <div class="desktop-screen-wrapper">
+                            <!-- Стрелки прокрутки -->
+                            <button class="scroll-arrow scroll-up" id="scroll-up" title="Прокрутить вверх">▲</button>
+                            <button class="scroll-arrow scroll-left" id="scroll-left" title="Прокрутить влево">◀</button>
+                            <div class="desktop-screen">
+                                <canvas id="screen-canvas"></canvas>
+                                <div id="screen-loading" class="screen-loading">
+                                    <div class="spinner"></div>
+                                    <p>Ожидание подключения...</p>
+                                </div>
                             </div>
+                            <button class="scroll-arrow scroll-right" id="scroll-right" title="Прокрутить вправо">▶</button>
+                            <button class="scroll-arrow scroll-down" id="scroll-down" title="Прокрутить вниз">▼</button>
                         </div>
                         <div class="desktop-info">
                             <span id="screen-resolution">Разрешение: -</span>
