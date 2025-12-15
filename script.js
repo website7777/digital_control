@@ -763,9 +763,16 @@ async function updateScreen() {
 // Mouse/Touch handlers
 let touchStartTime = 0;
 let touchStartPos = { x: 0, y: 0 };
+let lastClickTime = 0;
+let lastWheelScrollTime = 0;
 
 function handleCanvasClick(event) {
     if (!isStreaming) return;
+    
+    // Throttle клики (не чаще 500ms)
+    const now = Date.now();
+    if (now - lastClickTime < 500) return;
+    lastClickTime = now;
     
     const rect = screenCanvas.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width;
@@ -778,6 +785,11 @@ function handleCanvasRightClick(event) {
     event.preventDefault();
     if (!isStreaming) return;
     
+    // Throttle клики
+    const now = Date.now();
+    if (now - lastClickTime < 500) return;
+    lastClickTime = now;
+    
     const rect = screenCanvas.getBoundingClientRect();
     const x = (event.clientX - rect.left) / rect.width;
     const y = (event.clientY - rect.top) / rect.height;
@@ -789,7 +801,13 @@ function handleCanvasScroll(event) {
     event.preventDefault();
     if (!isStreaming) return;
     
-    const amount = event.deltaY > 0 ? -3 : 3;
+    // Throttle прокрутки колёсиком (не чаще 150ms)
+    const now = Date.now();
+    if (now - lastWheelScrollTime < 150) return;
+    lastWheelScrollTime = now;
+    
+    // Увеличенная прокрутка: -10/+10 вместо -3/+3
+    const amount = event.deltaY > 0 ? -10 : 10;
     sendCommand('mouse', { action: 'scroll', amount });
 }
 
@@ -810,7 +828,9 @@ function handleTouchStart(event) {
 
 // Обработка свайпа для прокрутки
 let scrollAccumulator = 0;
-const SCROLL_THRESHOLD = 30; // Минимальное расстояние для прокрутки
+const SCROLL_THRESHOLD = 50; // Минимальное расстояние для прокрутки
+let lastScrollTime = 0;
+const SCROLL_THROTTLE = 200; // Минимальный интервал между командами прокрутки (ms)
 
 function handleTouchMove(event) {
     event.preventDefault();
@@ -822,11 +842,15 @@ function handleTouchMove(event) {
     // Накапливаем движение
     scrollAccumulator += deltaY;
     
-    // Если накопили достаточно - отправляем команду прокрутки
-    if (Math.abs(scrollAccumulator) >= SCROLL_THRESHOLD) {
-        const scrollAmount = scrollAccumulator > 0 ? -3 : 3; // Инвертируем для естественной прокрутки
+    const now = Date.now();
+    
+    // Если накопили достаточно И прошло достаточно времени
+    if (Math.abs(scrollAccumulator) >= SCROLL_THRESHOLD && (now - lastScrollTime) >= SCROLL_THROTTLE) {
+        // Увеличенная прокрутка: -10/+10 вместо -3/+3
+        const scrollAmount = scrollAccumulator > 0 ? -10 : 10; // Инвертируем для естественной прокрутки
         sendCommand('mouse', { action: 'scroll', amount: scrollAmount });
         scrollAccumulator = 0;
+        lastScrollTime = now;
         touchStartPos.isScrolling = true;
     }
     
@@ -844,6 +868,13 @@ function handleTouchEnd(event) {
         scrollAccumulator = 0;
         return;
     }
+    
+    // Проверяем throttle для кликов (не чаще 500ms)
+    const now = Date.now();
+    if (now - lastClickTime < 500) {
+        return;
+    }
+    lastClickTime = now;
     
     // Короткое нажатие - клик
     if (touchDuration < 300) {
