@@ -600,9 +600,9 @@ body {
         ". up ."
         "left screen right"
         ". down .";
-    grid-template-columns: 40px 1fr 40px;
-    grid-template-rows: 40px 1fr 40px;
-    gap: 5px;
+    grid-template-columns: 50px 1fr 50px;
+    grid-template-rows: 50px 1fr 50px;
+    gap: 8px;
     flex: 1;
     min-height: 400px;
 }
@@ -612,25 +612,26 @@ body {
     background: var(--primary-gradient);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 18px;
+    border-radius: 10px;
+    font-size: 22px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: all 0.15s;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+    font-weight: bold;
 }
 
 .scroll-arrow:hover {
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    transform: scale(1.05);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.5);
 }
 
 .scroll-arrow:active {
-    transform: scale(0.95);
+    transform: scale(0.9);
     background: var(--secondary);
 }
 

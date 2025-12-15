@@ -106,52 +106,27 @@ function setupEventListeners() {
 // ========== СТРЕЛКИ ПРОКРУТКИ ==========
 
 let scrollIntervalId = null;
+let isScrolling = false;
 
 function setupScrollArrows() {
+    // Увеличенные значения прокрутки (как 3 оборота колёсика)
     const arrows = {
-        'scroll-up': { action: 'scroll', amount: 5 },
-        'scroll-down': { action: 'scroll', amount: -5 },
-        'scroll-left': { action: 'scroll_horizontal', amount: 5 },
-        'scroll-right': { action: 'scroll_horizontal', amount: -5 }
+        'scroll-up': { action: 'scroll', amount: 15 },
+        'scroll-down': { action: 'scroll', amount: -15 },
+        'scroll-left': { action: 'scroll_horizontal', amount: 15 },
+        'scroll-right': { action: 'scroll_horizontal', amount: -15 }
     };
     
     Object.entries(arrows).forEach(([id, data]) => {
         const btn = document.getElementById(id);
         if (!btn) return;
         
-        // Начать прокрутку при нажатии
-        const startScroll = () => {
-            if (!isStreaming && !screenCanvas) return;
-            
-            // Сразу отправляем первую команду
-            sendCommand('mouse', data);
-            
-            // Потом повторяем каждые 100ms пока зажато
-            scrollIntervalId = setInterval(() => {
-                sendCommand('mouse', data);
-            }, 100);
-        };
-        
-        // Остановить при отпускании
-        const stopScroll = () => {
-            if (scrollIntervalId) {
-                clearInterval(scrollIntervalId);
-                scrollIntervalId = null;
-            }
-        };
-        
-        // Mouse events
-        btn.addEventListener('mousedown', startScroll);
-        btn.addEventListener('mouseup', stopScroll);
-        btn.addEventListener('mouseleave', stopScroll);
-        
-        // Touch events
-        btn.addEventListener('touchstart', (e) => {
+        // Одиночный клик - одна прокрутка
+        btn.addEventListener('click', (e) => {
             e.preventDefault();
-            startScroll();
+            if (!config.selectedPcId) return;
+            sendCommand('mouse', data);
         });
-        btn.addEventListener('touchend', stopScroll);
-        btn.addEventListener('touchcancel', stopScroll);
     });
 }
 
