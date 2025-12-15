@@ -66,6 +66,9 @@ function setupEventListeners() {
     // PC selector
     document.getElementById('pc-selector').addEventListener('change', handlePCSelect);
     
+    // Monitor selector
+    document.getElementById('monitor-selector').addEventListener('change', handleMonitorSelect);
+    
     // Remote Desktop buttons
     const startBtn = document.getElementById('start-stream');
     const stopBtn = document.getElementById('stop-stream');
@@ -391,13 +394,62 @@ function handlePCSelect(e) {
         if (pc) {
             updateConnectionStatus(pc.status === 'online');
             showNotification(`Выбран ПК: ${pc.pc_name}`, 'success');
+            // Загружаем список мониторов
+            loadMonitors();
         }
     } else {
         updateConnectionStatus(false);
+        // Скрываем селектор мониторов
+        document.getElementById('monitor-selector').style.display = 'none';
     }
     
     // Останавливаем стриминг при смене ПК
     stopScreenStream();
+}
+
+// ========== МОНИТОРЫ ==========
+
+let selectedMonitor = 1;
+
+async function loadMonitors() {
+    if (!config.selectedPcId) return;
+    
+    try {
+        const result = await sendCommand('get_monitors');
+        if (result && result.status === 'success' && result.monitors) {
+            const selector = document.getElementById('monitor-selector');
+            selector.innerHTML = '';
+            
+            result.monitors.forEach((mon, index) => {
+                const option = document.createElement('option');
+                option.value = mon.id;
+                option.textContent = `🖥️ ${index + 1} (${mon.width}x${mon.height})`;
+                selector.appendChild(option);
+            });
+            
+            // Показываем селектор если больше 1 монитора
+            if (result.monitors.length > 1) {
+                selector.style.display = 'inline-block';
+            } else {
+                selector.style.display = 'none';
+            }
+            
+            // Устанавливаем выбранный монитор
+            selectedMonitor = parseInt(selector.value) || 1;
+        }
+    } catch (error) {
+        console.log('Не удалось загрузить мониторы:', error);
+    }
+}
+
+function handleMonitorSelect(e) {
+    selectedMonitor = parseInt(e.target.value) || 1;
+    localStorage.setItem('selectedMonitor', selectedMonitor);
+    
+    // Отправляем команду на смену монитора
+    sendCommand('set_monitor', { monitor_id: selectedMonitor });
+    
+    showNotification(`Выбран монитор ${selectedMonitor}`, 'success');
 }
 
 function updateConnectionStatus(online) {

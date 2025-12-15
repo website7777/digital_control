@@ -728,21 +728,28 @@ body {
 }
 
 /* PC Selector */
-.pc-selector {
+.pc-selector, .monitor-selector {
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     background-color: var(--card-bg);
     font-size: 14px;
     cursor: pointer;
-    min-width: 180px;
+    min-width: 150px;
     margin-right: 10px;
 }
 
-.pc-selector:focus {
+.pc-selector:focus, .monitor-selector:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.monitor-selector {
+    min-width: 120px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
 }
 
 /* Tabs */
