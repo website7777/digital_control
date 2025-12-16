@@ -482,8 +482,27 @@ async function loadMonitors() {
                             selector.style.display = 'none';
                         }
                         
-                        // Устанавливаем выбранный монитор
-                        selectedMonitor = parseInt(selector.value) || 1;
+                        // Восстанавливаем сохранённый выбор или используем текущий с сервера
+                        const savedMonitor = parseInt(localStorage.getItem('selectedMonitor')) || result.selected || 1;
+                        selectedMonitor = savedMonitor;
+                        selector.value = savedMonitor;
+                        
+                        // Отправляем команду установки монитора чтобы синхронизировать с PC
+                        fetch(`${config.serverUrl}/pc/command`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                token: config.token,
+                                pc_id: config.selectedPcId,
+                                command_type: 'set_monitor',
+                                command_data: { monitor_id: savedMonitor }
+                            })
+                        }).then(() => {
+                            console.log(`Монитор синхронизирован: ${savedMonitor}`);
+                        }).catch(err => {
+                            console.log('Ошибка синхронизации монитора:', err);
+                        });
+                        
                         return;
                     }
                 }
