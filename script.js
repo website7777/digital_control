@@ -482,26 +482,13 @@ async function loadMonitors() {
                             selector.style.display = 'none';
                         }
                         
-                        // Восстанавливаем сохранённый выбор или используем текущий с сервера
-                        const savedMonitor = parseInt(localStorage.getItem('selectedMonitor')) || result.selected || 1;
-                        selectedMonitor = savedMonitor;
-                        selector.value = savedMonitor;
+                        // Используем текущий выбранный монитор с сервера (по умолчанию 1)
+                        const serverMonitor = result.selected || 1;
+                        selectedMonitor = serverMonitor;
+                        selector.value = serverMonitor;
+                        localStorage.setItem('selectedMonitor', serverMonitor);
                         
-                        // Отправляем команду установки монитора чтобы синхронизировать с PC
-                        fetch(`${config.serverUrl}/pc/command`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                token: config.token,
-                                pc_id: config.selectedPcId,
-                                command_type: 'set_monitor',
-                                command_data: { monitor_id: savedMonitor }
-                            })
-                        }).then(() => {
-                            console.log(`Монитор синхронизирован: ${savedMonitor}`);
-                        }).catch(err => {
-                            console.log('Ошибка синхронизации монитора:', err);
-                        });
+                        console.log(`Текущий монитор на сервере: ${serverMonitor}`);
                         
                         return;
                     }
@@ -834,6 +821,18 @@ async function startScreenStream() {
     
     screenCanvas = document.getElementById('screen-canvas');
     screenCtx = screenCanvas.getContext('2d');
+    
+    // Сначала устанавливаем выбранный монитор
+    const monitorSelector = document.getElementById('monitor-selector');
+    const currentMonitor = monitorSelector ? parseInt(monitorSelector.value) || 1 : 1;
+    selectedMonitor = currentMonitor;
+    
+    // Отправляем команду выбора монитора перед стримом
+    console.log(`Устанавливаем монитор ${currentMonitor} перед стримом`);
+    await sendCommand('set_monitor', { monitor_id: currentMonitor });
+    
+    // Ждём чтобы команда точно обработалась
+    await new Promise(r => setTimeout(r, 500));
     
     // Отправляем команду на ПК начать стриминг
     const result = await sendCommand('start_stream');
