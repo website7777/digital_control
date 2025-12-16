@@ -1577,6 +1577,34 @@ async function googleSearch() {
     }
 }
 
+async function typeText() {
+    const text = document.getElementById('type-text-input').value;
+    if (!text) {
+        showNotification('Введите текст для печати', 'error');
+        return;
+    }
+    
+    const data = await sendCommand('keyboard', { action: 'type', text: text });
+    if (data && data.status === 'success') {
+        showNotification('Текст напечатан', 'success');
+        document.getElementById('type-text-input').value = '';
+    }
+}
+
+async function pressEnter() {
+    const data = await sendCommand('keyboard', { action: 'press', key: 'enter' });
+    if (data && data.status === 'success') {
+        showNotification('Enter нажат', 'success');
+    }
+}
+
+async function pressTab() {
+    const data = await sendCommand('keyboard', { action: 'press', key: 'tab' });
+    if (data && data.status === 'success') {
+        showNotification('Tab нажат', 'success');
+    }
+}
+
 async function openYoutube() {
     const data = await sendCommand('open_youtube', {});
     if (data && data.status === 'success') {
